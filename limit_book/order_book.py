@@ -165,8 +165,13 @@ class LimitOrderBook(object):
             # Fill orders
             while level > self.ask_min:
                 ask_min = self.ask_min
+                if ask_min not in self.book:
+                    # Skip this process if the level hasn't been visited.
+                    # This speeds up search and avoids memory overhead.
+                    self.ask_min += 1
+                    continue
                 quantity = order['quantity']
-                orders_to_fill = self.side_at_level(ask_min, 'ask')
+                orders_to_fill = self.side_at_level(ask_min, ASK)
                 if orders_to_fill:
                     book_entry = orders_to_fill[0]
                     if book_entry['quantity'] <= quantity:
@@ -187,7 +192,7 @@ class LimitOrderBook(object):
                     return self._trade_nonce
                 self.ask_min += 1
         # Insert unfilled order into book
-        buy_orders = self.side_at_level(level, 'bid')
+        buy_orders = self.side_at_level(level, BID)
         buy_orders.append(order)
         order_id = order.get('order_id')
         if order_id is not None:
@@ -197,15 +202,20 @@ class LimitOrderBook(object):
         return self._trade_nonce
 
     def process_sell(self, order):
-        assert order['side'] == 'ask'
+        assert order['side'] == ASK
         price = order['price']
         level = self.price_to_level(price)
         if level <= self.bid_max:
             # Fill orders
             while level <= self.bid_max:
                 bid_max = self.bid_max
+                if bid_max not in self.book:
+                    # Skip this process if the level hasn't been visited.
+                    # This speeds up search and avoids memory overhead.
+                    self.bid_max -= 1
+                    continue
                 quantity = order['quantity']
-                orders_to_fill = self.side_at_level(bid_max, 'bid')
+                orders_to_fill = self.side_at_level(bid_max, BID)
                 if orders_to_fill:
                     book_entry = orders_to_fill[0]
                     if book_entry['quantity'] <= quantity:
@@ -225,7 +235,7 @@ class LimitOrderBook(object):
                     self._trade_nonce += 1
                     return self._trade_nonce
                 self.bid_max -= 1
-        sell_orders = self.side_at_level(level, 'ask')
+        sell_orders = self.side_at_level(level, ASK)
         sell_orders.append(order)
         order_id = order.get('order_id')
         if order_id is not None:
