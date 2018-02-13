@@ -21,6 +21,8 @@ class LimitOrderBook(object):
             'side': str, bid/ask flag,
             'price': float, limit price (defaults to min/max prices)
         }
+
+    Orders are modified in place so pass as copy if it's need elsewhere.
     """
 
     def __init__(self, tick_size=TICK_SIZE, max_price=1e9):
@@ -243,3 +245,4 @@ class LimitOrderBook(object):
         if self.ask_min > level:
             self.ask_min = level
         return self._trade_nonce
+
